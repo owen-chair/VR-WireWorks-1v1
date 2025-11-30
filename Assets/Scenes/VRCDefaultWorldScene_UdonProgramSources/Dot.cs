@@ -23,7 +23,7 @@ public class Dot : UdonSharpBehaviour
     void Start()
     {
         this.m_Selected = false;
-        Debug.Log("Dot Start");
+        this.InteractionText = "";
     }
 
     public override void Interact()

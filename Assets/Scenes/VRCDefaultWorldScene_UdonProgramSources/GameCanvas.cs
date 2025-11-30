@@ -108,8 +108,6 @@ public class GameCanvas : UdonSharpBehaviour
                     return;
                 }
 
-                Debug.Log($"Dot instantiated at position ({x}, {y})");
-
                 MeshFilter meshFilter = dot.GetComponent<MeshFilter>();
                 if (meshFilter == null)
                 {
@@ -117,7 +115,6 @@ public class GameCanvas : UdonSharpBehaviour
                     Destroy(dot);
                     return;
                 }
-                Debug.Log("MeshFilter component found");
 
                 MeshRenderer meshRenderer = dot.GetComponent<MeshRenderer>();
                 if (meshRenderer == null)
@@ -126,7 +123,6 @@ public class GameCanvas : UdonSharpBehaviour
                     Destroy(dot);
                     return;
                 }
-                Debug.Log("MeshRenderer component found");
 
                 CapsuleCollider collider = dot.GetComponent<CapsuleCollider>();
                 if (collider == null)
@@ -135,7 +131,6 @@ public class GameCanvas : UdonSharpBehaviour
                     Destroy(dot);
                     return;
                 }
-                Debug.Log("CapsuleCollider component found");
 
                 Vector3 originalScale = dot.transform.localScale;
                 Quaternion originalRotation = this.transform.rotation;
@@ -183,12 +178,9 @@ public class GameCanvas : UdonSharpBehaviour
                 dotComponent.m_GridPosition = new Vector2Int(Mathf.RoundToInt(x), Mathf.RoundToInt(y));
                 dotComponent.m_GridSize = m_GridSize;
 
-                Debug.Log("Dot component found");
-
                 this.m_Dots[y * m_GridSize + x] = dotComponent;
 
                 dotComponent.Hide();
-                Debug.Log($"Dot placed in array at index {y * m_GridSize + x}");
             }
         }
 
@@ -212,7 +204,7 @@ public class GameCanvas : UdonSharpBehaviour
                 Dot[] adjacentDots = GetAdjacentDots(dot);
                 foreach (Dot adjacentDot in adjacentDots)
                 {
-                    if (adjacentDot != null && adjacentDot.IsVisible()) // Adjacent dot is not fully linked
+                    if (adjacentDot != null && adjacentDot.IsVisible() && !dot.IsLinkedTo(adjacentDot))
                     {
                         return false; // Found at least one pair of dots that can be linked
                     }

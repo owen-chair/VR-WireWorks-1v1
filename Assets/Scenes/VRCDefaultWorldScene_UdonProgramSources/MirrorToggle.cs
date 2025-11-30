@@ -7,6 +7,9 @@ using VRC.Udon;
 public class MirrorToggle : UdonSharpBehaviour
 {
     public GameObject m_MirrorObject;
+
+    public AudioSource m_ToggleOnSound;
+    public AudioSource m_ToggleOffSound;
     
     void Start()
     {
@@ -22,10 +25,18 @@ public class MirrorToggle : UdonSharpBehaviour
         if (this.m_MirrorObject.gameObject.activeSelf)
         {
             this.m_MirrorObject.gameObject.SetActive(false);
+            if (this.m_ToggleOffSound != null)
+            {
+                this.m_ToggleOffSound.Play();
+            }
         }
         else
         {
             this.m_MirrorObject.gameObject.SetActive(true);
+            if (this.m_ToggleOnSound != null)
+            {
+                this.m_ToggleOnSound.Play();
+            }
         }
     }
 }

@@ -1,0 +1,12 @@
+newmtl Marble_White_007_Variant
+map_Kd C:/Users/obone/Documents/VRC_Worlds/Dotboxes01/Dotboxes01/Assets/Materials/Environment/Marble_White_007/Marble_White_007_basecolor.jpg
+bump C:/Users/obone/Documents/VRC_Worlds/Dotboxes01/Dotboxes01/Assets/Materials/Environment/Marble_White_007/Marble_White_007_normal.jpg
+Kd 0.802 0.802 0.802
+d 1
+
+newmtl PlasterWall001_1
+map_Kd C:/Users/obone/Documents/VRC_Worlds/Dotboxes01/Dotboxes01/Assets/Materials/Environment/PlasterWall001/Plaster_Rough_001_COLOR.jpg
+bump C:/Users/obone/Documents/VRC_Worlds/Dotboxes01/Dotboxes01/Assets/Materials/Environment/PlasterWall001/Plaster_Rough_001_NORM.jpg
+Kd 1 1 1
+d 1
+

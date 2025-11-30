@@ -8,8 +8,10 @@ using VRC.Udon;
 
 public class JoinButton : NetworkInterface
 {
+    public AudioSource m_AudioSource_JoinButtonClickSound;
     void Start()
     {
+        this.InteractionText = "";
     }
     
     public override void Interact()
@@ -23,6 +25,11 @@ public class JoinButton : NetworkInterface
             localPlayer = VRC.SDKBase.Networking.LocalPlayer;
             if(localPlayer != null)
             {
+                if (this.m_AudioSource_JoinButtonClickSound != null)
+                {
+                    this.m_AudioSource_JoinButtonClickSound.Play();
+                }
+                
                 player.SendMethodNetworked(
                     nameof(Player.On_SeatJoinRequest),
                     SyncTarget.All,

@@ -45,6 +45,16 @@ public class Game : NetworkInterface
     public int m_BoxCount;
     public Box[] m_Boxes;
 
+    public AudioSource m_AudioSource_GameStartSound;
+    public AudioSource m_AudioSource_LineTakeSound;
+    public AudioSource m_AudioSource_BoxTakeSound;
+
+    public GameObject m_Seat0_TurnIndicator;
+    public GameObject m_Seat0_ExtraTurnIndicator;
+
+    public GameObject m_Seat1_TurnIndicator;
+    public GameObject m_Seat1_ExtraTurnIndicator;
+
     void Start()
     {
         this.m_Players = new VRCPlayerApi[2];
@@ -220,14 +230,14 @@ public class Game : NetworkInterface
         if (requestingPlayer == null) return;
         if (!IsPlayerInGame(requestingPlayer)) { Debug.LogError("Game.cs: GameStart: Player not in game"); return; }
         if (this.m_GameStatus != GameStatus.Ready) return;
-        if(IsLocalPlayerMaster() && requestingPlayer.playerId != Networking.LocalPlayer.playerId)
+        if (IsLocalPlayerMaster() && requestingPlayer.playerId != Networking.LocalPlayer.playerId)
         {
             // Somehow, two players became game masters.
             // Other player started the game first, so that player is the game master now.
             Debug.Log("Game.cs: GameStart: 2 game masters? setting game master to other player.");
             this.m_GameMaster = this.PlayerInGameById(requestingPlayer.playerId);
         }
-        else if(!IsPlayerInGame(Networking.LocalPlayer))
+        else if (!IsPlayerInGame(Networking.LocalPlayer))
         {
             // Somehow, the local player is not set for spectators. Oh well, just set it here.
             Debug.Log("Game.cs: GameStart: Local player not set. Setting local player to requesting player.");
@@ -238,16 +248,20 @@ public class Game : NetworkInterface
         //this.GivePlayerBomb(0);
 
         StartButton startButton0 = this.FindStartButtonForSeat(0);
-        if(startButton0 == null) { Debug.LogError("Join: StartButton not found"); return; }
+        if (startButton0 == null) { Debug.LogError("Join: StartButton not found"); return; }
 
         startButton0.gameObject.SetActive(false);
 
         StartButton startButton1 = this.FindStartButtonForSeat(1);
-        if(startButton1 == null) { Debug.LogError("Join: StartButton not found"); return; }
+        if (startButton1 == null) { Debug.LogError("Join: StartButton not found"); return; }
 
         startButton1.gameObject.SetActive(false);
 
         this.m_SeatTurn = 0;
+        this.SetSeat0TurnIndicator(true);
+        this.SetSeat0ExtraTurnIndicator(false);
+        this.SetSeat1TurnIndicator(false);
+        this.SetSeat1ExtraTurnIndicator(false);
         this.m_GameStatus = GameStatus.InProgress;
 
         GameCanvas gameCanvas0 = this.GetGameCanvasBySeatId(0);
@@ -259,8 +273,45 @@ public class Game : NetworkInterface
             return;
         }
 
+        if (this.m_AudioSource_GameStartSound != null)
+        {
+            this.m_AudioSource_GameStartSound.Play();
+        }
+
         gameCanvas0.ShowAllDots();
         gameCanvas1.ShowAllDots();
+    }
+
+    public void SetSeat0TurnIndicator(bool show)
+    {
+        if (this.m_Seat0_TurnIndicator != null)
+        {
+            this.m_Seat0_TurnIndicator.SetActive(show);
+        }
+    }
+
+    public void SetSeat0ExtraTurnIndicator(bool show)
+    {
+        if (this.m_Seat0_ExtraTurnIndicator != null)
+        {
+            this.m_Seat0_ExtraTurnIndicator.SetActive(show);
+        }
+    }
+
+    public void SetSeat1TurnIndicator(bool show)
+    {
+        if (this.m_Seat1_TurnIndicator != null)
+        {
+            this.m_Seat1_TurnIndicator.SetActive(show);
+        }
+    }
+    
+    public void SetSeat1ExtraTurnIndicator(bool show)
+    {
+        if (this.m_Seat1_ExtraTurnIndicator != null)
+        {
+            this.m_Seat1_ExtraTurnIndicator.SetActive(show);
+        }
     }
 
     public void Request_BoxSelect(Box box)
@@ -616,16 +667,24 @@ public class Game : NetworkInterface
             if (resultA == 2)
             {
                 this.m_Scores[seatid]++;
-
+                if (this.m_AudioSource_BoxTakeSound != null)
+                {
+                    this.m_AudioSource_BoxTakeSound.Play();
+                }
                 Notify_PlayerExtraTurn();
                 return;
             }
             // dots formed a link (on both canvases) so its the end of a players turn
             if (resultA == 1)
             {
+                if (this.m_AudioSource_LineTakeSound != null)
+                {
+                    this.m_AudioSource_LineTakeSound.Play();
+                }
+                
                 Notify_PlayerTurnChange();
                 return;
-              }
+            }
 
             if(requestingPlayer.playerId == Networking.LocalPlayer.playerId)
             {
@@ -749,11 +808,18 @@ public class Game : NetworkInterface
         {
             player0.SetCanvasText("Loser!");
             player1.SetCanvasText("Winner!");
-        } else
+        }
+        else
         {
             player0.SetCanvasText("Draw!");
             player1.SetCanvasText("Draw!");
         }
+
+        // remove turn indicators
+        this.SetSeat0TurnIndicator(false);
+        this.SetSeat0ExtraTurnIndicator(false);
+        this.SetSeat1TurnIndicator(false);
+        this.SetSeat1ExtraTurnIndicator(false);
     }
 
     [NetworkedMethod]
@@ -765,6 +831,21 @@ public class Game : NetworkInterface
 
         Debug.Log($"On_PlayerTurnChange: {this.m_SeatTurn} -> {seat}");
         this.m_SeatTurn = seat;
+
+        if (seat == 0)
+        {
+            this.SetSeat0TurnIndicator(true);
+            this.SetSeat0ExtraTurnIndicator(false);
+            this.SetSeat1TurnIndicator(false);
+            this.SetSeat1ExtraTurnIndicator(false);
+        }
+        else if (seat == 1)
+        {
+            this.SetSeat0TurnIndicator(false);
+            this.SetSeat0ExtraTurnIndicator(false);
+            this.SetSeat1TurnIndicator(true);
+            this.SetSeat1ExtraTurnIndicator(false);
+        }
     }
 
     [NetworkedMethod]
@@ -772,10 +853,20 @@ public class Game : NetworkInterface
     {
         if (this.m_GameId != gameId) return;
         if (requestingPlayer == null) return;
-        if(!IsPlayerMaster(requestingPlayer)) return;
+        if (!IsPlayerMaster(requestingPlayer)) return;
 
         Debug.Log($"On_PlayerExtraTurn: {this.m_SeatTurn} -> {seat}");
         this.m_SeatTurn = seat;
+
+        // they used their extra turn so remove the indicator
+        if (seat == 0)
+        {
+            this.SetSeat0ExtraTurnIndicator(false);
+        }
+        else if (seat == 1)
+        {
+            this.SetSeat1ExtraTurnIndicator(false);
+        }
     }
 
     [NetworkedMethod]
@@ -1421,6 +1512,14 @@ public class Game : NetworkInterface
         {
             this.m_HasBonusTurn = true;
             Debug.Log("On_RequestScrewDriverADot_Success: bonus turn");
+            if (seatid == 0)
+            {
+                this.SetSeat0ExtraTurnIndicator(true);
+            }
+            else if (seatid == 1)
+            {
+                this.SetSeat1ExtraTurnIndicator(true);
+            }
         }
         else if (powerup >= 26 && powerup <= 50) // Chance: 25%
         {

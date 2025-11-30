@@ -10,6 +10,7 @@ public class StartButton : UdonSharpBehaviour
     void Start()
     {
         this.gameObject.SetActive(false);    
+        this.InteractionText = "";
     }
 
     public override void Interact()

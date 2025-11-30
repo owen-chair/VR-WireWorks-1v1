@@ -42,7 +42,12 @@ public class Link : UdonSharpBehaviour
         }
 
         // Set the color of the link
-        link.GetComponent<Renderer>().material.color = color;
+        //link.GetComponent<Renderer>().material.color = color;
+        
+        var renderer = link.GetComponent<Renderer>();
+        var mat = renderer.material; // instance
+        mat.SetColor("_Color", color);
+        mat.SetColor("_GlowColor", color);
 
         link.m_ConnectedDot_A = dotA;
         link.m_ConnectedDot_B = dotB;
@@ -115,26 +120,32 @@ public class Link : UdonSharpBehaviour
         this.transform.SetParent(m_ConnectedDot_A.transform);
 
         Vector3 direction = (m_ConnectedDot_B.transform.position - m_ConnectedDot_A.transform.position).normalized;
-        float dotARadius = m_ConnectedDot_A.transform.localScale.x / 2;
-        float dotBRadius = m_ConnectedDot_B.transform.localScale.x;
 
         this.m_StartPosition = m_ConnectedDot_A.transform.position;
-        this.m_EndPosition = m_ConnectedDot_B.transform.position;
+        this.m_EndPosition   = m_ConnectedDot_B.transform.position;
 
         this.transform.position = (this.m_StartPosition + this.m_EndPosition) / 2;
         this.transform.LookAt(this.m_EndPosition);
 
+        // Base scale
         Vector3 scale = this.transform.localScale;
-        scale.z = Vector3.Distance(this.m_StartPosition, this.m_EndPosition) * 2.0f;
-        scale.x = 0.01f;
+        scale.z = Vector3.Distance(this.m_StartPosition, this.m_EndPosition) * 2.416f;
+        scale.x = 0.07f;
         scale.y = 0.01f;
 
-        this.transform.localScale = scale;
-        
+        // Determine grid direction
         this.m_LinkDirection = new Vector2(
             this.m_ConnectedDot_B.m_GridPosition.x - this.m_ConnectedDot_A.m_GridPosition.x,
             this.m_ConnectedDot_B.m_GridPosition.y - this.m_ConnectedDot_A.m_GridPosition.y
         );
+
+        // If vertical (only Y changes), make it thinner
+        if (m_LinkDirection.x == 0 && m_LinkDirection.y != 0)
+        {
+            scale.x *= 0.5f; // half the width when vertical
+        }
+
+        this.transform.localScale = scale;
     }
 
     public Dot GetOtherDot(Dot dot)

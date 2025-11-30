@@ -21,6 +21,7 @@ public class Box : UdonSharpBehaviour
     public bool m_IsBeingDeleted = false;
     void Start()
     {
+        this.InteractionText = "";
     }
 
     public override void Interact()
@@ -61,10 +62,25 @@ public class Box : UdonSharpBehaviour
         
         box.UpdateIDs();
 
-        box.GetComponent<Renderer>().material.color = game.SeatColor(game.m_SeatTurn);
+        //box.GetComponent<Renderer>().material.color = game.SeatColor(game.m_SeatTurn);
+                
+        var renderer = box.GetComponent<Renderer>();
+        var mat = renderer.material; // instance
+        mat.SetColor("_Color", color);
+        mat.SetColor("_GlowColor", color);
 
         linkedLine.LinkBox(box);
         game.AddBox(box, game.m_SeatTurn);
+
+        // sto rendering the links under the box
+        foreach (Link link in links)
+        {
+            if (link != null)
+            {
+                // just setactive false
+                link.gameObject.SetActive(false);
+            }
+        }
 
         return true;
     }

@@ -2,40 +2,102 @@
 using UdonSharp;
 using UnityEngine;
 using VRC.SDKBase;
+using VRC.SDK3.Data;
 using VRC.Udon;
+using VRC.Udon.Common;
 
 public class HandLaser : UdonSharpBehaviour
 {
     public VRCPlayerApi player;
-    public VRCPlayerApi.TrackingDataType handType;
+    public HandType hand = HandType.RIGHT;
 
-    private void Update()
+#if !UNITY_ANDROID
+    private readonly Vector3 handPosOffset = new Vector3(0.0185f, 0, .0506f);
+    private readonly Vector3 handRotOffset = Vector3.up * 40;
+#endif
+
+#if UNITY_ANDROID
+    private readonly Vector3 handPosOffset = new Vector3(.0079f, 0, .02125f);
+    private readonly Vector3 handRotOffset = Vector3.up * 45;
+#endif
+
+    void Start()
     {
-        if(player == null) player = Networking.LocalPlayer;
-        
-        VRCPlayerApi.TrackingData rightHandData = player.GetTrackingData(VRCPlayerApi.TrackingDataType.RightHand);
-        // Get the position of the hand
-        Vector3 handPosition = rightHandData.position;
+        if (Networking.LocalPlayer.IsValid() && !Networking.LocalPlayer.IsUserInVR())
+        {
+            // deactivate hand laser in desktop mode
+            this.gameObject.SetActive(false);
+        }
+    }
 
-        // Get the rotation of the hand
-        Quaternion handRotation = rightHandData.rotation;
+    void Update()
+    {
+        if (!Utilities.IsValid(player))
+        {
+            player = Networking.LocalPlayer;
+        }
 
-        // Convert the upward direction from the hand's local coordinate system to the world coordinate system
-        Vector3 upwardDirection = handRotation * Vector3.left;
+        if (!Utilities.IsValid(player))
+        {
+            return;
+        }
 
-        // Adjust the position of the hand upwards by 0.01 units relative to the hand's orientation
-        Vector3 adjustedPosition = handPosition + upwardDirection * 0.025f;
+        if (!player.IsUserInVR())
+        {
+            VRCPlayerApi.TrackingData headTrack = player.GetTrackingData(VRCPlayerApi.TrackingDataType.Head);
+            transform.position = headTrack.position;
+            transform.rotation = headTrack.rotation;
 
-        // Set the position of the laser
-        transform.position = adjustedPosition;
+            //this.DisableHighlightsOnPointedObject();
 
-        // Create a rotation that represents a 35 degree rotation around the X axis
-        Quaternion offsetRotation = Quaternion.Euler(0, 40, 0);
+            return;
+        }
 
-        // Combine the two rotations
-        Quaternion finalRotation = handRotation * offsetRotation;
+        VRCPlayerApi.TrackingData trackingData = player.GetTrackingData(
+            hand == HandType.RIGHT
+                ? VRCPlayerApi.TrackingDataType.RightHand
+                : VRCPlayerApi.TrackingDataType.LeftHand);
 
-        // Set the rotation of the laser
-        transform.rotation = finalRotation;
+        Vector3 origin = trackingData.position + trackingData.rotation * handPosOffset;
+        Vector3 direction = trackingData.rotation * Quaternion.Euler(handRotOffset) * Vector3.forward;
+
+        transform.position = origin;
+        transform.rotation = Quaternion.LookRotation(direction, Vector3.up);
+
+        //this.DisableHighlightsOnPointedObject();
+    }
+
+    // attempt at dirty hack to disable vrchat highlights
+    // doesnt work
+    private void DisableHighlightsOnPointedObject()
+    {
+        RaycastHit hit;
+        float maxDistance = 10f; // tweak as needed
+
+        LayerMask mask = LayerMask.GetMask("Default");
+        Ray ray = new Ray(this.transform.position, this.transform.forward);
+
+        if (Physics.Raycast(ray, out hit, maxDistance, mask))
+        {
+            if (hit.collider == null) return;
+            if (hit.collider.gameObject == null) return;
+
+            Debug.Log("HandLaser: Hit object: " + hit.collider.gameObject.name);
+    
+            GameObject obj = hit.collider.gameObject;
+
+            // Disable highlight on the hit object
+            VRC.SDKBase.InputManager.EnableObjectHighlight(obj, false);
+
+            // And on all its renderers
+            Renderer[] renderers = obj.GetComponentsInChildren<Renderer>();
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Renderer r = renderers[i];
+                if (r == null) continue;
+
+                VRC.SDKBase.InputManager.EnableObjectHighlight(r, false);
+            }
+        }
     }
 }
